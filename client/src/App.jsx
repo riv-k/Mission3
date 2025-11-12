@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
@@ -6,34 +6,54 @@ const API_URL = import.meta.env.VITE_API_URL;
 const API_KEY = import.meta.env.VITE_API_KEY;
 
 function App() {
-  const [jobTitle, setJobTitle] = useState("");
-  const [messages, setMessages] = useState([]);
+  // Load saved data from localStorage
+  const [jobTitle, setJobTitle] = useState(() => localStorage.getItem("jobTitle") || "");
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem("conversationHistory");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Persist jobTitle and messages
+  useEffect(() => {
+    localStorage.setItem("jobTitle", jobTitle);
+    localStorage.setItem("conversationHistory", JSON.stringify(messages));
+  }, [jobTitle, messages]);
+
+  // Start interview with local starter message
   const startInterview = () => {
     if (!jobTitle.trim()) {
       alert("Please enter a job title to start the interview.");
       return;
     }
-    setMessages([{ role: "ai", text: "Tell me about yourself." }]);
+
+    if (messages.length === 0) {
+      setMessages([{ role: "ai", text: "Tell me about yourself." }]);
+    }
   };
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const updated = [...messages, { role: "user", text: input }];
-    setMessages(updated);
+    // Add user message locally
+    const updatedMessages = [...messages, { role: "user", text: input }];
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
 
     try {
-      // Send JSON instead of FormData
+      // Only send the **latest user message** to the backend
+      const latestUserMessage = updatedMessages
+        .filter(msg => msg.role === "user")
+        .slice(-1)
+        .map(msg => ({ role: "user", content: msg.text }));
+
       const res = await axios.post(
-        API_URL, 
+        API_URL,
         {
           jobTitle,
-          conversationHistory: updated,
+          conversationHistory: latestUserMessage, // <-- only latest user message
         },
         {
           headers: {
@@ -44,11 +64,13 @@ function App() {
       );
 
       const aiMessage = res.data.aiResponse || "Hmm, can you clarify that?";
-      setMessages([...updated, { role: "ai", text: aiMessage }]);
+
+      // Add AI message locally
+      setMessages([...updatedMessages, { role: "ai", text: aiMessage }]);
     } catch (err) {
       console.error(err);
       setMessages([
-        ...updated,
+        ...updatedMessages,
         { role: "ai", text: "⚠️ Error reaching the AI server." },
       ]);
     } finally {
@@ -61,6 +83,8 @@ function App() {
     setJobTitle("");
     setInput("");
     setLoading(false);
+    localStorage.removeItem("jobTitle");
+    localStorage.removeItem("conversationHistory");
   };
 
   return (
