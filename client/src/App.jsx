@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL; 
+const API_URL = import.meta.env.VITE_API_URL;
 const API_KEY = import.meta.env.VITE_API_KEY;
 
 function App() {
@@ -28,17 +28,20 @@ function App() {
     setLoading(true);
 
     try {
-      // Build FormData to match backend
-      const formData = new FormData();
-      formData.append("jobTitle", jobTitle);
-      formData.append("conversationHistory", JSON.stringify(updated));
-
-      const res = await axios.post(API_URL, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "x-api-key": API_KEY,
+      // Send JSON instead of FormData
+      const res = await axios.post(
+        API_URL, 
+        {
+          jobTitle,
+          conversationHistory: updated,
         },
-      });
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+          },
+        }
+      );
 
       const aiMessage = res.data.aiResponse || "Hmm, can you clarify that?";
       setMessages([...updated, { role: "ai", text: aiMessage }]);
