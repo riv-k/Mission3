@@ -1,13 +1,15 @@
 const aiService = require("../services/aiService");
+const { buildInterviewPrompt } = require("../helpers/promptBuilder");
 
 exports.handleAnswer = async (req, res) => {
-  const { jobTitle, userAnswer } = req.body;
+  const { jobTitle, conversationHistory } = req.body;
+
+  const prompt = buildInterviewPrompt(jobTitle, conversationHistory);
 
   // Placeholder for AI call
-  const aiResponse = await aiService.getResponse(jobTitle, userAnswer);
+  const aiResponse = await aiService.getResponse(prompt);
 
   res.json({
-    userAnswer,
     aiResponse,
   });
 };
