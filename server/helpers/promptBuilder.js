@@ -1,9 +1,13 @@
+const formatConversation = require("./formatConversation");
+
 const buildInterviewPrompt = (jobTitle, conversationHistory) => {
+  const formattedHistory = formatConversation(conversationHistory);
+
   return `
 You are an AI job interviewer. The user is interviewing for the position: ${jobTitle}.
 
 The interview has already begun and here is the conversation so far:
-${conversationHistory}
+${formattedHistory}
 
 Rules:
 - Ask 7 interview questions in total (refer to conversation history to see how many you have asked already), and ask questions one at a time.
