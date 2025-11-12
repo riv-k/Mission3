@@ -1,15 +1,26 @@
-const aiService = require('../services/aiService');
+const aiService = require("../services/aiService");
+const { buildInterviewPrompt } = require("../helpers/promptBuilder");
 
 exports.handleAnswer = async (req, res) => {
-  const { jobTitle, userAnswer } = req.body;
+  try {
+    const { jobTitle, conversationHistory } = req.body;
 
-  // Placeholder for AI call
-  const aiResponse = await aiService.getResponse(jobTitle, userAnswer);
+    if (!jobTitle || !conversationHistory) {
+      return res
+        .status(400)
+        .json({ error: "jobTitle and conversationHistory are required." });
+    }
 
-  res.json({
-    userAnswer,
-    aiResponse
-  });
+    const prompt = buildInterviewPrompt(jobTitle, conversationHistory);
+    const aiResponse = await aiService.getResponse(prompt);
+
+    res.json({ aiResponse });
+  } catch (err) {
+    console.error("Interview Error:", err);
+    res
+      .status(500)
+      .json({ error: "Something went wrong with the AI interview service." });
+  }
 };
 
 exports.getStatus = (req, res) => {
