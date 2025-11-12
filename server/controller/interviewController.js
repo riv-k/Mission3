@@ -1,4 +1,4 @@
-const aiService = require('../services/aiService');
+const aiService = require("../services/aiService");
 
 exports.handleAnswer = async (req, res) => {
   const { jobTitle, userAnswer } = req.body;
@@ -8,7 +8,7 @@ exports.handleAnswer = async (req, res) => {
 
   res.json({
     userAnswer,
-    aiResponse
+    aiResponse,
   });
 };
 
