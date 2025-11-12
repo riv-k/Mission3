@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL; 
 const API_KEY = import.meta.env.VITE_API_KEY;
 
 function App() {
@@ -28,9 +28,10 @@ function App() {
     setLoading(true);
 
     try {
+      // Build FormData to match backend
       const formData = new FormData();
       formData.append("jobTitle", jobTitle);
-      formData.append("conversation", JSON.stringify(updated));
+      formData.append("conversationHistory", JSON.stringify(updated));
 
       const res = await axios.post(API_URL, formData, {
         headers: {
@@ -39,7 +40,7 @@ function App() {
         },
       });
 
-      const aiMessage = res.data.reply || "Hmm, can you clarify that?";
+      const aiMessage = res.data.aiResponse || "Hmm, can you clarify that?";
       setMessages([...updated, { role: "ai", text: aiMessage }]);
     } catch (err) {
       console.error(err);
@@ -55,6 +56,8 @@ function App() {
   const restartInterview = () => {
     setMessages([]);
     setJobTitle("");
+    setInput("");
+    setLoading(false);
   };
 
   return (

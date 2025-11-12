@@ -1,6 +1,7 @@
 // index.js
 const express = require("express");
 const dotenv = require("dotenv");
+const cors = require("cors"); // import cors
 
 dotenv.config();
 
@@ -12,6 +13,8 @@ const interviewRoutes = require("./routes/interviewRoute");
 
 // Middleware to parse JSON
 app.use(express.json());
+app.use(cors());
+ 
 
 // [UNPROTECTED] Test route
 app.get("/", (req, res) => {
