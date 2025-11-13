@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
@@ -6,45 +6,73 @@ const API_URL = import.meta.env.VITE_API_URL;
 const API_KEY = import.meta.env.VITE_API_KEY;
 
 function App() {
-  const [jobTitle, setJobTitle] = useState("");
-  const [messages, setMessages] = useState([]);
+  // Load saved data from localStorage
+  const [jobTitle, setJobTitle] = useState(
+    () => localStorage.getItem("jobTitle") || ""
+  );
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem("conversationHistory");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Persist jobTitle and messages
+  useEffect(() => {
+    localStorage.setItem("jobTitle", jobTitle);
+    localStorage.setItem("conversationHistory", JSON.stringify(messages));
+  }, [jobTitle, messages]);
+
+  // Start interview with local starter message
   const startInterview = () => {
     if (!jobTitle.trim()) {
       alert("Please enter a job title to start the interview.");
       return;
     }
-    setMessages([{ role: "ai", text: "Tell me about yourself." }]);
+
+    if (messages.length === 0) {
+      setMessages([{ role: "ai", text: "Tell me about yourself." }]);
+    }
   };
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const updated = [...messages, { role: "user", text: input }];
-    setMessages(updated);
+    // Add user message locally
+    const updatedMessages = [...messages, { role: "user", text: input }];
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("jobTitle", jobTitle);
-      formData.append("conversation", JSON.stringify(updated));
+      // Convert local messages to backend format
+      const conversationHistory = updatedMessages.map((msg) => ({
+        role: msg.role === "ai" ? "assistant" : "user",
+        message: msg.text,
+      }));
 
-      const res = await axios.post(API_URL, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "x-api-key": API_KEY,
+      const res = await axios.post(
+        API_URL,
+        {
+          jobTitle,
+          conversationHistory,
         },
-      });
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+          },
+        }
+      );
 
-      const aiMessage = res.data.reply || "Hmm, can you clarify that?";
-      setMessages([...updated, { role: "ai", text: aiMessage }]);
+      const aiMessage = res.data.aiResponse || "Hmm, can you clarify that?";
+
+      // Add AI message locally
+      setMessages([...updatedMessages, { role: "ai", text: aiMessage }]);
     } catch (err) {
       console.error(err);
       setMessages([
-        ...updated,
+        ...updatedMessages,
         { role: "ai", text: "⚠️ Error reaching the AI server." },
       ]);
     } finally {
@@ -55,6 +83,10 @@ function App() {
   const restartInterview = () => {
     setMessages([]);
     setJobTitle("");
+    setInput("");
+    setLoading(false);
+    localStorage.removeItem("jobTitle");
+    localStorage.removeItem("conversationHistory");
   };
 
   return (
