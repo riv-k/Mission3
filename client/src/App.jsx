@@ -7,7 +7,9 @@ const API_KEY = import.meta.env.VITE_API_KEY;
 
 function App() {
   // Load saved data from localStorage
-  const [jobTitle, setJobTitle] = useState(() => localStorage.getItem("jobTitle") || "");
+  const [jobTitle, setJobTitle] = useState(
+    () => localStorage.getItem("jobTitle") || ""
+  );
   const [messages, setMessages] = useState(() => {
     const saved = localStorage.getItem("conversationHistory");
     return saved ? JSON.parse(saved) : [];
@@ -43,17 +45,17 @@ function App() {
     setLoading(true);
 
     try {
-      // Only send the **latest user message** to the backend
-      const latestUserMessage = updatedMessages
-        .filter(msg => msg.role === "user")
-        .slice(-1)
-        .map(msg => ({ role: "user", content: msg.text }));
+      // Convert local messages to backend format
+      const conversationHistory = updatedMessages.map((msg) => ({
+        role: msg.role === "ai" ? "assistant" : "user",
+        message: msg.text,
+      }));
 
       const res = await axios.post(
         API_URL,
         {
           jobTitle,
-          conversationHistory: latestUserMessage, // <-- only latest user message
+          conversationHistory,
         },
         {
           headers: {
